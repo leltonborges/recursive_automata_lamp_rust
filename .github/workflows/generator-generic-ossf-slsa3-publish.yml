@@ -28,7 +28,7 @@ jobs:
           # Listar os artefatos aos quais a proveniência se referirá.
           files=$(ls meu_artifact*)
           # Gerar os assuntos (codificados em base64).
-          echo "hashes=$(sha256sum $files | base64 -w0)" >> "${GITHUB_OUTPUT}"
+          echo "::set-output name=digests::$(sha256sum $files | base64 -w0)"
 
   provenance:
     needs: [build]
