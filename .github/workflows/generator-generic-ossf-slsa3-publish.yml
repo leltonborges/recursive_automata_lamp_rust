@@ -1,0 +1,42 @@
+name: SLSA generic generator
+
+on:
+  workflow_dispatch:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      digests: ${{ steps.hash.outputs.digests }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build artifacts
+        run: |
+            # Comandos para construir seus artefatos.
+            echo "conteúdo do meu_artifact1" > meu_artifact1
+            echo "conteúdo do meu_artifact2" > meu_artifact2
+
+      - name: Generate subject for provenance
+        id: hash
+        run: |
+          set -euo pipefail
+
+          # Listar os artefatos aos quais a proveniência se referirá.
+          files=$(ls meu_artifact*)
+          # Gerar os assuntos (codificados em base64).
+          echo "hashes=$(sha256sum $files | base64 -w0)" >> "${GITHUB_OUTPUT}"
+
+  provenance:
+    needs: [build]
+    permissions:
+      actions: read   # Para ler o caminho do fluxo de trabalho.
+      id-token: write # Para assinar a proveniência.
+      contents: write # Para adicionar ativos a um release.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.4.0
+    with:
+      base64-subjects: "${{ needs.build.outputs.digests }}"
+      upload-assets: true # Opcional: Fazer upload para um novo release
